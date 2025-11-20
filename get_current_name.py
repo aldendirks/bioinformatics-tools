@@ -127,13 +127,8 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
     for species_batch in batch(species_list, batch_size):
         filter_str = " or ".join([f"name startWith '{sp}'" for sp in species_batch])
         params = {"filter": filter_str}
-        try:
-            response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=30)
-            status_code = response.status_code
-        except Exception as e:
-            status_code = None
-            if verbose:
-                print(f"❌ Request failed: {e}")
+        response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=30)
+        status_code = response.status_code
         
         # Debug: print the parameters being sent
         # print(params)
