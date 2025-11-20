@@ -9,7 +9,7 @@ Version: 1.3
 
 Script to query MycoBank API for current names of fungal species. Results are 
 saved to a tab-delimited text file. Excluded species are saved to a separate file.
-f
+
 Examples: 
 - Query MycoBank for a list of species in species.txt.
   get_current_name.py species.txt
@@ -43,8 +43,6 @@ def read_species_list(file_path, excluded_species=None,
         excluded_output_file="excluded_species.tsv", verbose=False):
     """Read species from a file, excluding provisional/ambiguous or user-specified species."""
     
-    if excluded_species is None:
-        excluded_species = []
     species_to_check = []
     excluded_text = ['[', ']', 'sp.', 'cf.', 'aff.', "'", '"', '/']
     excluded_rows = []
@@ -182,7 +180,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
             # Possibility 3: multiple records found, either with same or different current names
             if len(species_items) > 1:
                 current_ids = [item.get("synonymy", {}).get("currentNameId") for item in species_items]
-                if all(cid == current_ids[0] for cid in current_ids):
+                if len(set(current_ids)) == 1:
                     # All items point to the same currentNameId — select the one with that ID
                     item = next(
                         (it for it in species_items 
@@ -278,30 +276,30 @@ def main():
         "species_list", 
         help="Path to the species list txt file (one species per line)")
     parser.add_argument(
-        "--exclude", 
-        metavar="FILE_PATH", 
-        help="Path to a txt file containing species names to exclude from query (one species per line)", 
-        default=None
-        )
-    parser.add_argument(
-        "--batch-size", 
-        help="Number of species per API request", 
-        type=int, default=20
-        )
-    parser.add_argument(
-        "--output", 
+        "-o", "--output", 
         metavar="OUTPUT_PATH", 
         help="Path to write MycoBank query output TSV file", 
         default="mycobank_results.tsv"
         )
     parser.add_argument(
-        "--excluded-output", 
+        "-x", "--exclude", 
+        metavar="FILE_PATH", 
+        help="Path to a txt file containing species names to exclude from query (one species per line)", 
+        default=None
+        )
+    parser.add_argument(
+        "-ox", "--excluded-output", 
         metavar="EXCLUDED_OUTPUT_PATH", 
         help="Path to write TSV file for excluded species", 
         default="excluded_species.tsv"
         )
     parser.add_argument(
-        "--verbose", 
+        "-b", "--batch-size", 
+        help="Number of species per API request", 
+        type=int, default=20
+        )
+    parser.add_argument(
+        "-v", "--verbose", 
         help="Print detailed output", 
         action="store_true"
         )
