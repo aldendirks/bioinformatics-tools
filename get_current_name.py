@@ -4,12 +4,12 @@
 Get the current MycoBank name for a list of species names (batch querying). 
 
 Author: Alden Dirks
-Date: November 19, 2025
-Version: 1.1
+Date: November 20, 2025
+Version: 1.2
 
 Script to query MycoBank API for current names of fungal species. Results are 
 saved to a tab-delimited text file. Excluded species are saved to a separate file.
-
+f
 Examples: 
 - Query MycoBank for a list of species in species.txt.
   get_current_name.py species.txt
@@ -127,20 +127,20 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
     for species_batch in batch(species_list, batch_size):
         filter_str = " or ".join([f"name startWith '{sp}'" for sp in species_batch])
         params = {"filter": filter_str}
-        response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=30)
-        status_code = response.status_code
-        
+
         # Debug: print the parameters being sent
-        # print(params)
-        
-        # Possibility 1: API query failed
-        if status_code != 200:
+        # print(f"\nMycoBank query parameters:\n{params}\n")
+
+        try:
+            response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=60)
+        except requests.exceptions.RequestException as e:
+            # Possibility 1: API query failed
             for sp in species_batch:
                 results.append([sp, "error", "NA"])
                 summary["error"] += 1
                 processed_count += 1
             if verbose:
-                print(f"❌ API error for batch {species_batch}: {status_code}".ljust(120))
+                print(f"❌ API error for batch {species_batch}: {e}".ljust(120))
             print_progress(processed_count, total_species)
             continue
 
@@ -148,7 +148,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
         items = data.get("items", [])
 
         # Debug: print the items received
-        # print(items)
+        # print(f"\nMycoBank data:\n{items}\n")
 
         for species in species_batch:
 
@@ -158,6 +158,9 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 if item.get("name", "").strip().lower() == species.strip().lower()
                 and item.get("nameStatus") not in ["Illegitimate", "Invalid"]
             ]
+
+            # Debug: print the species items list
+            # print(f"\nSpecies items list:\n{species_items}\n")
 
             # Possibility 2: no records or valid items found
             if not species_items:
@@ -176,11 +179,20 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 print_progress(processed_count, total_species)
                 continue
             
-            # Possibility 3: multiple records found, either identical or differing current names
+            # Possibility 3: multiple records found, either with same or different current names
             if len(species_items) > 1:
                 current_ids = [item.get("synonymy", {}).get("currentNameId") for item in species_items]
                 if all(cid == current_ids[0] for cid in current_ids):
-                    item = species_items[0]
+                    # All items point to the same currentNameId — select the one with that ID
+                    item = next(
+                        (it for it in species_items 
+                        if it.get("id", "") == current_ids[0]),
+                        species_items[0]  # fallback (should rarely be needed)
+                    )
+                    
+                    # Debug: print the select item from the iterator
+                    # print(f"\nSelected item:\n{item}\n")
+
                 else:
                     options = [item.get("name") for item in species_items]
                     mb_numbers = [str(item.get("mycobankNr")) for item in species_items]
@@ -225,7 +237,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 status = "not_current"
                 summary["not_current"] += 1
                 try:
-                    response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS, timeout=30)
+                    response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS, timeout=60)
                     if response_current.status_code == 200:
                         data_current = response_current.json()
                         if isinstance(data_current, dict):
