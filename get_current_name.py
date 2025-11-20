@@ -4,8 +4,8 @@
 Get the current MycoBank name for a list of species names (batch querying). 
 
 Author: Alden Dirks
-Date: November 14, 2025
-Version: 1.0
+Date: November 19, 2025
+Version: 1.1
 
 Script to query MycoBank API for current names of fungal species. Results are 
 saved to a tab-delimited text file. Excluded species are saved to a separate file.
@@ -28,7 +28,6 @@ import csv
 import os
 import requests
 import sys
-import time
 from itertools import islice
 
 
@@ -47,7 +46,7 @@ def read_species_list(file_path, excluded_species=None,
     if excluded_species is None:
         excluded_species = []
     species_to_check = []
-    excluded_characters = ['[', ']', 'sp.', 'cf.', 'aff.']
+    excluded_text = ['[', ']', 'sp.', 'cf.', 'aff.', "'", '"', '/']
     excluded_rows = []
 
     # Summary counters
@@ -62,7 +61,7 @@ def read_species_list(file_path, excluded_species=None,
             if sp in excluded_species:
                 reason = "user_excluded"
                 excluded_user_count += 1
-            elif any(char in sp for char in excluded_characters):
+            elif any(text in sp for text in excluded_text):
                 reason = "ambiguous"
                 excluded_ambig_count += 1
             else:
@@ -128,19 +127,25 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
     for species_batch in batch(species_list, batch_size):
         filter_str = " or ".join([f"name startWith '{sp}'" for sp in species_batch])
         params = {"filter": filter_str}
-        response = requests.get(BASE_URL, headers=ACCESS, params=params)
+        try:
+            response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=30)
+            status_code = response.status_code
+        except Exception as e:
+            status_code = None
+            if verbose:
+                print(f"❌ Request failed: {e}")
         
         # Debug: print the parameters being sent
         # print(params)
         
         # Possibility 1: API query failed
-        if response.status_code != 200:
+        if status_code != 200:
             for sp in species_batch:
                 results.append([sp, "error", "NA"])
                 summary["error"] += 1
                 processed_count += 1
             if verbose:
-                print(f"❌ API error for batch {species_batch}: {response.status_code}".ljust(120))
+                print(f"❌ API error for batch {species_batch}: {status_code}".ljust(120))
             print_progress(processed_count, total_species)
             continue
 
@@ -161,9 +166,12 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
 
             # Possibility 2: no records or valid items found
             if not species_items:
-                status = "no_valid" if any(
-                    sp.lower() in (item.get("name", "").lower() for item in items) for sp in [species]
-                    ) else "no_records"
+                # Do we have *any* record with this name at all?
+                has_any_record = any(
+                    item.get("name", "").strip().lower() == species.strip().lower()
+                    for item in items
+                )
+                status = "no_valid" if has_any_record else "no_records"
                 if verbose:
                     msg = "⚠️ No valid records" if status == "no_valid" else "⚠️ No records found"
                     print(f"{msg} for '{species}'".ljust(120))
@@ -176,8 +184,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
             # Possibility 3: multiple records found, either identical or differing current names
             if len(species_items) > 1:
                 current_ids = [item.get("synonymy", {}).get("currentNameId") for item in species_items]
-                first_id = current_ids[0]
-                if all(cid == first_id for cid in current_ids):
+                if all(cid == current_ids[0] for cid in current_ids):
                     item = species_items[0]
                 else:
                     options = [item.get("name") for item in species_items]
@@ -199,7 +206,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
             _id = item["id"]
             current_id = item.get("synonymy", {}).get("currentNameId")
 
-            # Possibility 4: no current name ID found (never encountered this before)
+            # Possibility 4: no current name ID found
             if not current_id:
                 if verbose:
                     print(f"⚠️ No current name ID found for '{species}'".ljust(120))
@@ -212,23 +219,42 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
             # Possibility 5: species name is current name
             if _id == current_id:
                 status = "current"
-                current_name = item["name"]
                 summary["current"] += 1
+                current_name = item.get("name", "<unknown>")
+                mycobank_number = item.get("mycobankNr", "<unknown>")
                 if verbose:
                     print(f"✅ '{species}' is the current MycoBank name.".ljust(120))
             
             # Possibility 6: species name is not current
             else:
                 status = "not_current"
-                response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS)
-                data_current = response_current.json()
-                current_name = data_current.get("name", "<unknown>")
-                mycobank_number = data_current.get("mycobankNr", "<unknown>")
                 summary["not_current"] += 1
+                try:
+                    response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS, timeout=30)
+                    if response_current.status_code == 200:
+                        data_current = response_current.json()
+                        if isinstance(data_current, dict):
+                            current_name = data_current.get("name", "<unknown>")
+                            mycobank_number = data_current.get("mycobankNr", "<unknown>")
+                        else:
+                            current_name = "<unknown>"
+                            mycobank_number = "<unknown>"
+                    else:
+                        current_name = "<unknown>"
+                        mycobank_number = "<unknown>"
+                except Exception as e:
+                    if verbose:
+                        print(f"❌ Error fetching current name for id {current_id}: {e}".ljust(120))
+                    current_name = "<unknown>"
+                    mycobank_number = "<unknown>"
                 if verbose:
-                    print(f"🔄 The current MycoBank name for '{species}' is '{current_name}' "
-                               f"with MycoBank number '{mycobank_number}': \n        "
-                               f"{MB_URL_TEMPLATE}{mycobank_number}".ljust(120))
+                    print(
+                        (
+                            f"🔄 The current MycoBank name for '{species}' is '{current_name}' "
+                            f"with MycoBank number '{mycobank_number}': \n        "
+                            f"{MB_URL_TEMPLATE}{mycobank_number}"
+                        ).ljust(120)
+                    )
 
             results.append([species, status, current_name])
             processed_count += 1
@@ -309,7 +335,8 @@ def main():
     )
 
     # Final summary
-    total = sum(1 for line in open(args.species_list) if line.strip())
+    with open(args.species_list) as f:
+        total = sum(1 for line in f if line.strip())
     print("\n\n=========== FINAL SUMMARY ===========")
     print(f"Total species in input file:      {total}")
     print(f"Excluded (user list):             {excluded_user_count}")
