@@ -5,7 +5,7 @@ Get the current MycoBank name for a list of species names (batch querying).
 
 Author: Alden Dirks
 Date: November 20, 2025
-Version: 1.2
+Version: 1.3
 
 Script to query MycoBank API for current names of fungal species. Results are 
 saved to a tab-delimited text file. Excluded species are saved to a separate file.
@@ -238,30 +238,21 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 summary["not_current"] += 1
                 try:
                     response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS, timeout=60)
-                    if response_current.status_code == 200:
-                        data_current = response_current.json()
-                        if isinstance(data_current, dict):
-                            current_name = data_current.get("name", "<unknown>")
-                            mycobank_number = data_current.get("mycobankNr", "<unknown>")
-                        else:
-                            current_name = "<unknown>"
-                            mycobank_number = "<unknown>"
-                    else:
-                        current_name = "<unknown>"
-                        mycobank_number = "<unknown>"
-                except Exception as e:
+                    data_current = response_current.json()
+                    current_name = data_current.get("name", "<unknown>")
+                    mycobank_number = data_current.get("mycobankNr", "<unknown>")
                     if verbose:
-                        print(f"❌ Error fetching current name for id {current_id}: {e}".ljust(120))
-                    current_name = "<unknown>"
-                    mycobank_number = "<unknown>"
-                if verbose:
-                    print(
-                        (
-                            f"🔄 The current MycoBank name for '{species}' is '{current_name}' "
-                            f"with MycoBank number '{mycobank_number}': \n        "
-                            f"{MB_URL_TEMPLATE}{mycobank_number}"
-                        ).ljust(120)
-                    )
+                        print(
+                            (
+                                f"🔄 The current MycoBank name for '{species}' is '{current_name}' "
+                                f"with MycoBank number '{mycobank_number}': \n        "
+                                f"{MB_URL_TEMPLATE}{mycobank_number}"
+                            ).ljust(120)
+                        )
+                except requests.exceptions.RequestException as e:
+                    if verbose:
+                        print(f"❌ Error fetching current name for {current_id} for '{species}': {e}".ljust(120))
+                    current_name = "<error>"
 
             results.append([species, status, current_name])
             processed_count += 1
