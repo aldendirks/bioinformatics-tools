@@ -9,7 +9,7 @@
 
 ## ITS phylogenetics pipeline
 
-These scripts can be strung together for a semi-automatic ITS phylogenetic analysis pipeline. The example belwo shows a pipeline to create an ITS phylogeny for the lorchel genus *Pseudorhizina*. This genus has an ID of 951406 on iNaturalist. 
+These scripts can be strung together for a semi-automatic ITS phylogenetic analysis pipeline. The example below creates an ITS phylogeny for the lorchel genus *Pseudorhizina*. This genus has an ID of 951406 on iNaturalist. 
 
 Create directory structure. 
 
