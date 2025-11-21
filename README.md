@@ -27,21 +27,21 @@ fetch_inat_seqs.py 994028 --output seqs/inat.fasta
 Find ITS sequences that are in the wrong orientation and reverse complement them. See Alan Rockefeller's [`fixfasta.py`](https://github.com/AlanRockefeller/fixfasta.py) script. 
 
 ```
-fixfasta.py seqs/its_formatted.fasta seqs/genbank_formatted.fasta > seqs/combined.fasta
+fixfasta.py seqs/*.fasta --output seqs/corrected.fasta
 ```
 
 Align and trim sequences. **I highly recommend manually reviewing the alignment and correcting or deleting any misformatted or low-quality sequences**
 
 ```
-mafft --auto seqs/combined.fasta > aln/combined.aln
-trimal -in aln/combined.aln -out aln/trimmed.aln -fasta -automated1
+mafft --auto seqs/corrected.fasta > aln/its.aln
+trimal -in aln/its.aln -out aln/its_trimmed.aln -fasta -automated1
 ```
 
 Phylogenetic analysis.
 
 ```
-iqtree3 -s aln/combined.aln --alrt 1000 -B 1000 -pre phylo/combined -redo
-iqtree3 -s aln/trimmed.aln --alrt 1000 -B 1000 -pre phylo/trimmed -redo
+iqtree3 -s aln/its.aln --alrt 1000 -B 1000 -pre phylo/its -redo
+iqtree3 -s aln/its_trimmed.aln --alrt 1000 -B 1000 -pre phylo/its_trimmed -redo
 ```
 
 Print formatted ITS trees. 
@@ -49,3 +49,7 @@ Print formatted ITS trees.
 ```
 # Rscript ...
 ```
+
+## To do
+
+Update `fetch_inat_seqs.py` to output provisional name. 

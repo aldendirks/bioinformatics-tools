@@ -12,16 +12,19 @@ iNaturalist and outputs a formatted FASTA file. Provisional species names are
 used in place of consensus names when available. Sequences on iNaturalist are 
 often a bit messier than those on GenBank, so basic cleaning steps are included. 
 
-To remove short sequences, use the `remove_seqs.py` script in this repository. 
-
 To reverse complement ITS sequences that are in the wrong orientation, use 
 Alan Rockefeller's script `fixfasta.py` at: 
 https://github.com/AlanRockefeller/fixfasta.py
 
-Features:
+Examples
+- Get ITS sequences for the genus Pseudorhizina with taxon ID 951406
+  fetch_inat_seqs.py 951406
 
-Usage:
+- Specify a page limit to return fewer records. Useful if you just want to see total. 
+  fetch_inat_seqs.py 47170 --max-pages 1 # 18,349,888 fungal observations
 
+- Specify output file name and path. 
+  fetch_inat_seqs.py 951406 --output seqs/inat.fasta
 """
 
 import argparse
@@ -55,7 +58,7 @@ def clean_sequence(seq):
     return seq
 
 
-def get_inat_observations(taxon_id=None, per_page=200, max_pages=None, delay=1):
+def get_inat_observations(taxon_id=None, per_page=200, max_pages=None, delay=0.5):
     """Download iNaturalist observations"""
     page = 1
     observations = []
@@ -88,7 +91,7 @@ def get_inat_observations(taxon_id=None, per_page=200, max_pages=None, delay=1):
               f"{len(sequenced_observations)} with ITS")
 
         # Stop conditions
-        if max_pages and page >= max_pages:
+        if max_pages and page > max_pages:
             print("Max pages limit reached.")
             break
         if len(results) < per_page:
@@ -101,7 +104,7 @@ def get_inat_observations(taxon_id=None, per_page=200, max_pages=None, delay=1):
     return total, observations
 
 
-def get_place_info(place_id, delay=1):
+def get_place_info(place_id):
     """Look up a place by ID, with caching"""
     if place_id in place_cache:
         return place_cache[place_id]
@@ -240,7 +243,7 @@ def main():
     parser.add_argument("--output", metavar="OUTPUT_PATH", help="Path to write FASTA output", default="inat.fasta")
     parser.add_argument("--per_page", help="Number of observations to request per page (max 200)", type=int, default=200)
     parser.add_argument("--max-pages", help="Maximum number of pages to fetch (for testing)", type=int, default=None)
-    parser.add_argument("--delay", help="Delay (seconds) between API page requests", type=float, default=1.0)
+    parser.add_argument("--delay", help="Delay (seconds) between API page requests", type=float, default=0.5)
     
     # If no arguments are provided, show help and exit
     if len(sys.argv) == 1:
