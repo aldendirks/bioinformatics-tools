@@ -45,8 +45,8 @@ def clean_sequence(seq):
     seq = seq.strip().replace(" ", "").replace("\n", "").upper()
     # Define valid IUPAC DNA characters
     valid = "ACGTRYWSMKHBVDN"
-    # Find first stretch of ≥10 valid DNA characters
-    pattern = f"[{valid}]{{10,}}"
+    # Find first stretch of ≥20 valid DNA characters
+    pattern = f"[{valid}]{{20,}}"
     match = re.search(pattern, seq)
     if match:
         seq = seq[match.start():]
@@ -114,10 +114,7 @@ def get_place_info(place_id, delay=1):
             place_cache[place_id] = None
             return None
         place_cache[place_id] = data[0]
-        time.sleep(delay)
-
         return data[0]
-    
     except requests.RequestException:
         place_cache[place_id] = None
         return None
