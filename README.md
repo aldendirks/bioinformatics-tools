@@ -9,7 +9,7 @@
 
 ## ITS phylogenetics pipeline
 
-These scripts can be strung together for a semi-automatic ITS phylogenetic analysis pipeline. The example belwo shows a pipeline to create an ITS phylogeny for the jelly fungus genus *Phaeotremella*. This genus has an ID of 994028 on iNaturalist. 
+These scripts can be strung together for a semi-automatic ITS phylogenetic analysis pipeline. The example belwo shows a pipeline to create an ITS phylogeny for the lorchel genus *Pseudorhizina*. This genus has an ID of 951406 on iNaturalist. 
 
 Create directory structure. 
 
@@ -20,7 +20,7 @@ mkdir -p aln seqs phylo
 Fetch sequences from iNaturalist and GenBank. 
 
 ```
-fetch_inat_seqs.py 994028 --output seqs/inat.fasta
+fetch_inat_seqs.py 951406 --output seqs/inat.fasta
 # fetch_genbank_seqs.py ...
 ```
 
