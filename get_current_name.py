@@ -131,6 +131,9 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
 
         try:
             response = requests.get(BASE_URL, headers=ACCESS, params=params, timeout=60)
+            response.raise_for_status() # Raises an HTTPError for 4xx/5xx status codes
+            data = response.json()
+            items = data.get("items", [])
         except requests.exceptions.RequestException as e:
             # Possibility 1: API query failed
             for sp in species_batch:
@@ -141,9 +144,6 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 print(f"❌ API error for batch {species_batch}: {e}".ljust(120))
             print_progress(processed_count, total_species)
             continue
-
-        data = response.json()
-        items = data.get("items", [])
 
         # Debug: print the items received
         # print(f"\nMycoBank data:\n{items}\n")
@@ -236,6 +236,7 @@ def get_current_names_batch(species_list, output_file="mycobank_results.tsv", ba
                 summary["not_current"] += 1
                 try:
                     response_current = requests.get(f"{BASE_URL}/{current_id}", headers=ACCESS, timeout=60)
+                    response_current.raise_for_status() # Raises an HTTPError for 4xx/5xx status codes
                     data_current = response_current.json()
                     current_name = data_current.get("name", "<unknown>")
                     mycobank_number = data_current.get("mycobankNr", "<unknown>")
