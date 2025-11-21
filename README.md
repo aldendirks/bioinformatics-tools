@@ -49,7 +49,3 @@ Print formatted ITS trees.
 ```
 # Rscript ...
 ```
-
-## To do
-
-Update `fetch_inat_seqs.py` to output provisional name. 

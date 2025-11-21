@@ -159,14 +159,20 @@ def parse_fasta(observations):
     metadata = []
 
     for obs in observations:
-        species = obs.get("taxon", {}).get("name")
-        species_rank = obs.get("taxon", {}).get("rank").lower().strip()
-        if species_rank == "species":
-            species = species.replace(" ", "-")
-        elif species_rank == "genus":
+        taxon = obs.get("taxon", {}).get("name")
+        rank = obs.get("taxon", {}).get("rank").lower().strip()
+        prov_name = next(
+            (field["value"] for field in obs.get("ofvs", []) if field.get("name") == "Provisional Species Name"),
+            None
+        )
+        if prov_name:
+            species = prov_name.replace(" ", "-")
+        elif rank == "species":
+            species = taxon.replace(" ", "-")
+        elif rank == "genus":
             species += "-sp."
         else: 
-            species = f"{species_rank}_{species}"
+            species = f"{rank}_{taxon}"
         inat_id = obs.get("id") or "NA"
         country, state = extract_country_state(obs)
         lon, lat = (obs.get("geojson", {}).get("coordinates") or [None, None])[:2]
@@ -194,7 +200,6 @@ def parse_fasta(observations):
         metadata.append({
             "header": header,
             "species": species,
-            "species_rank": species_rank,
             "country": country,
             "state": state,
             "inat_id": inat_id,
