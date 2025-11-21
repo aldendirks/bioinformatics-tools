@@ -30,7 +30,7 @@ Find ITS sequences that are in the wrong orientation and reverse complement them
 fixfasta.py seqs/its_formatted.fasta seqs/genbank_formatted.fasta > seqs/combined.fasta
 ```
 
-Align and trim sequences. **I highly recommend manually reviewing the alignment and correcting or deleting any misformated or low-quality sequences**
+Align and trim sequences. **I highly recommend manually reviewing the alignment and correcting or deleting any misformatted or low-quality sequences**
 
 ```
 mafft --auto seqs/combined.fasta > aln/combined.aln
