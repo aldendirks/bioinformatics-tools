@@ -1,4 +1,4 @@
-# Bioinformatics Utilities, Scripts, and Programs
+# Bioinformatics Tools
 
 ## Scripts
 
