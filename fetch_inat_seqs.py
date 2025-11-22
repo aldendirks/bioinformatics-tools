@@ -159,8 +159,8 @@ def parse_fasta(observations):
     metadata = []
 
     for obs in observations:
-        taxon = obs.get("taxon", {}).get("name")
-        rank = obs.get("taxon", {}).get("rank").lower().strip()
+        taxon = obs.get("taxon", {}).get("name") or "unknown"
+        rank = (obs.get("taxon", {}).get("rank") or "").lower().strip()
         prov_name = next(
             (field["value"] for field in obs.get("ofvs", []) if field.get("name") == "Provisional Species Name"),
             None
@@ -170,10 +170,10 @@ def parse_fasta(observations):
         elif rank == "species":
             species = taxon.replace(" ", "-")
         elif rank == "genus":
-            species += "-sp."
+            species = f"{taxon}-sp."
         else: 
             species = f"{rank}_{taxon}"
-        inat_id = obs.get("id") or "NA"
+        inat_id = obs.get("id")
         country, state = extract_country_state(obs)
         lon, lat = (obs.get("geojson", {}).get("coordinates") or [None, None])[:2]
         observed_on = obs.get("observed_on", "")
@@ -190,7 +190,7 @@ def parse_fasta(observations):
         raw_seq = ofv.get("value", "")
         cleaned_seq = clean_sequence(raw_seq)
         if not cleaned_seq:
-            print(f"[WARN] Sequence for {header} contains no valid DNA, skipping.")
+            print(f"[WARN] Sequence for {species} (iNat{inat_id}) contains no valid DNA, skipping.")
             continue
 
         header = f"{species}_iNat{inat_id}_{country}-{state}".replace(" ", "_")
