@@ -3,6 +3,7 @@
 ## Scripts
 
 * `fetch_inat_seqs.py` - fetch ITS sequences from iNaturalist for a user-provided taxon ID. 
+* `fetch_gb_seqs.py` - fetch ITS sequences from GenBank for a user-provided taxon name. 
 * `get_current_name.py` - with a user-provided list of species names, queries MycoBank for the current name. 
 * `print_seqs.py` - print one or more sequences from a multifasta file based on sequence position. 
 * `remove_seqs.py` - remove sequences from a multifasta file that are shorter than a specified length.
@@ -21,7 +22,7 @@ Fetch sequences from iNaturalist and GenBank.
 
 ```
 fetch_inat_seqs.py 951406 --output seqs/inat.fasta
-# fetch_genbank_seqs.py ...
+fetch_gb_seqs.py "Pseudorhizina" --output seqs/gb.fasta
 ```
 
 Find ITS sequences that are in the wrong orientation and reverse complement them. See Alan Rockefeller's [`fixfasta.py`](https://github.com/AlanRockefeller/fixfasta.py) script. 

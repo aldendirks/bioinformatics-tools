@@ -4,8 +4,8 @@
 Download iNaturalist sequences for a given taxon ID number. 
 
 Author: Alden Dirks
-Date: November 21, 2025
-Version: 1.0
+Date: December 8, 2025
+Version: 1.1
 
 Provided a taxon ID number, this script downloads all ITS sequences from
 iNaturalist and outputs a formatted FASTA file. Provisional species names are 
@@ -175,7 +175,9 @@ def parse_fasta(observations):
             species = f"{rank}_{taxon}"
         inat_id = obs.get("id")
         country, state = extract_country_state(obs)
-        lon, lat = (obs.get("geojson", {}).get("coordinates") or [None, None])[:2]
+        geo = obs.get("geojson") or {}
+        coords = geo.get("coordinates") or [None, None]
+        lon, lat = coords[:2]
         observed_on = obs.get("observed_on", "")
         user = obs.get("user", {}).get("login", "")
 
